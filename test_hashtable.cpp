@@ -113,6 +113,10 @@ int main(){
 		hash_find(key, ht, len);
 	}
 
+
+	
+
+
 	return 0;	
 }
 

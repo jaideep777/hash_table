@@ -27,7 +27,7 @@ class HashNode{
 	HashNode(){
 		key = Key();		// Value-initialization for Key and Value. This will be 0 for built-in types and conbstructor for user defined types
 		value = Value();
-		count = 0;
+		count = 0;			// number of collisions that have happend at this slot
 		isEmpty = true;
 		isDeleted = false;
 	}
@@ -84,9 +84,12 @@ int hash_insert(Key key, Value value, HashNode<Key,Value>* ht, int length, int* 
 
 template <typename Key, typename Value>
 int hash_delete(Key key, HashNode<Key,Value>* ht, int length){
-	int id = hash_find(key, ht, length);
+	size_t hash = hash3D(key, length);
+	int count;
+	size_t id = hash_find(key, ht, length, &count);
 	ht[id].isEmpty = true;
 	ht[id].isDeleted = true;
+	cout << "Delete: <" << key << "," << ht[id].value << "> (count, attempts-1) = " << ht[hash].count << ", " << count-1 << ")" << endl;	// TODO: Can reduce count by one when the last number is deleted, but that may well have been the only number inserted, in which case count should have gone to zero. But theres no way to keep track of this! When creating the hashmap for interpolator, upon interval refinement, dont delete the interval. Only change the value, and add a new interval. 
 }
 
 
