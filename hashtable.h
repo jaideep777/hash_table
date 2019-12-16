@@ -33,7 +33,7 @@ class HashNode{
 	}
 	
 	void print(){
-		if (!isEmpty) cout << "<" << key << ", " << value << "> " << " [" << count-1 << " collisions]" << endl;
+		if (!isEmpty) cout << "<" << key << ", " << value << "> " << " [" << count << " collisions]" << endl;
 		else cout << "-----------" << endl;
 	}
 };
@@ -50,6 +50,10 @@ int hash3D(Key key, int length){
 }
 
 
+int hash2(int id, int length){
+//	return (id+11)%length;
+	return (id+677)%length;
+}
 
 
 template <typename Key, typename Value>
@@ -57,10 +61,10 @@ int hash_insert(Key key, Value value, HashNode<Key,Value>* ht, int length, int* 
 	cout << "Insert: <" << key << ", " << value << "> : trying ";
 	size_t hash = hash3D(key, length);	// get the hash of the specifed key
 	size_t id = hash;					// the location where this <key, value> will be stored equals hash, but will be incremented if not empty 
-	cout << hash << "(hash), ";
-	int count = 1;						// number of attemts required before empty slot was found (defaults to one, i.e. no increments were required)
+	cout << hash << "*, ";
+	int count = 0;						// number of attemts required before empty slot was found (defaults to one, i.e. no increments were required)
 	while (!ht[id].isEmpty){ 	
-		id = (id+11)%length;			// increment slot (using double hashing) until empty slot found 
+		id = hash2(id, length);					// increment slot (using double hashing) until empty slot found 
 		++count;
 		cout << id << ", ";
 	}
@@ -79,12 +83,12 @@ template <typename Key, typename Value>
 size_t hash_find(Key key, HashNode<Key,Value>* ht, int length, int* attempts=NULL){
 	size_t hash = hash3D(key, length);
 	int id = hash;
-	int count = 1; 
-	if (attempts != NULL) *attempts = count;
+	int count = 0; 
+	if (attempts != NULL) *attempts = count+1;
 	while (!(ht[id].key == key && !ht[id].isEmpty)){ 	// start at expected locaiton and probe until key matches
-		id = (id+11)%length;
+		id = hash2(id, length);
 		++count;
-		if (attempts != NULL) *attempts = count;
+		if (attempts != NULL) *attempts = count+1;
 		if (count > ht[hash].count) return -1;			// if probe attempts exceeds count, key is not in the table (because only 'count' no. of entries were ever stored for the same key)
 	}
 	return id;
@@ -93,9 +97,11 @@ size_t hash_find(Key key, HashNode<Key,Value>* ht, int length, int* attempts=NUL
 
 template <typename Key, typename Value>
 void hash_print(HashNode<Key,Value>* ht, int length){
+	cout << "~~~ HASH TABLE ~~~~~~~~~~~" << endl;
 	for (int i=0; i<length; ++i){
-		cout << i << ":"; ht[i].print();
+		cout << i << ": "; ht[i].print();
 	}	
+	cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
 }
 
 #endif
