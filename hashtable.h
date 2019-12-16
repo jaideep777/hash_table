@@ -33,7 +33,8 @@ class HashNode{
 	}
 	
 	void print(){
-		if (!isEmpty) cout << "<" << key << ", " << value << "> " << " [" << count << " collisions]" << endl;
+		if (isDeleted) cout << "---<" << key << "," << value << ">--- " << " [" << count << " collisions]" << endl;
+		else if (!isEmpty) cout << "<" << key << ", " << value << "> " << " [" << count << " collisions]" << endl;
 		else cout << "-----------" << endl;
 	}
 };
@@ -56,6 +57,7 @@ int hash2(int id, int length){
 }
 
 
+
 template <typename Key, typename Value>
 int hash_insert(Key key, Value value, HashNode<Key,Value>* ht, int length, int* final_id=NULL){
 	cout << "Insert: <" << key << ", " << value << "> : trying ";
@@ -64,14 +66,15 @@ int hash_insert(Key key, Value value, HashNode<Key,Value>* ht, int length, int* 
 	cout << hash << "*, ";
 	int count = 0;						// number of attemts required before empty slot was found (defaults to one, i.e. no increments were required)
 	while (!ht[id].isEmpty){ 	
-		id = hash2(id, length);					// increment slot (using double hashing) until empty slot found 
-		++count;
+		id = hash2(id, length);					// increment slot (using double hashing) until empty or deleted slot found 
+		/*if (!ht[id].isDeleted)*/ ++count;			// counter is not incremented if inserting into previously deleted slot, because keys that have been mapped past the deleted slot stay intact
 		cout << id << ", ";
 	}
 	ht[id].value = value;				// once empty slot found, store the <key,value> in the slot, and 
 	ht[id].key = key;
 	ht[id].isEmpty = false;
-	ht[hash].count = count; //max(counts[id], count);
+	ht[id].isDeleted = false;
+	ht[hash].count = max(ht[hash].count, count);	// when insertion happens in a deleted slot, we dont want to lose information that something existed beyond the deleted slot. Hence, count must be maximum of previous count and result of current insertion
 	cout << " --> stored @ [" << id << "]" << endl;
 	if (final_id != NULL) *final_id = id;
 	return count;
@@ -80,18 +83,42 @@ int hash_insert(Key key, Value value, HashNode<Key,Value>* ht, int length, int* 
 
 
 template <typename Key, typename Value>
+int hash_delete(Key key, HashNode<Key,Value>* ht, int length){
+	int id = hash_find(key, ht, length);
+	ht[id].isEmpty = true;
+	ht[id].isDeleted = true;
+}
+
+
+template <typename Key, typename Value>
 size_t hash_find(Key key, HashNode<Key,Value>* ht, int length, int* attempts=NULL){
 	size_t hash = hash3D(key, length);
 	int id = hash;
 	int count = 0; 
+	if (attempts == NULL) attempts = new int; // DEBUG ONLY
 	if (attempts != NULL) *attempts = count+1;
+	cout << "Find: " << id << "*, ";
 	while (!(ht[id].key == key && !ht[id].isEmpty)){ 	// start at expected locaiton and probe until key matches
 		id = hash2(id, length);
 		++count;
+		cout << id << ", ";
 		if (attempts != NULL) *attempts = count+1;
-		if (count > ht[hash].count) return -1;			// if probe attempts exceeds count, key is not in the table (because only 'count' no. of entries were ever stored for the same key)
+		if (count > ht[hash].count) {id = -1; break;} // return -1;			// if probe attempts exceeds count, key is not in the table (because only 'count' no. of entries were ever stored for the same key)
 	}
+	
+	if (id >= 0) cout << "<" << key << ", " << ht[id].value << "> [" << *attempts << " tries]" << ((key != ht[id].value*10)? " * FAIL *":"") << endl;
+	else cout << "<" << key << ", " << "- " << "> [" << *attempts << " tries]" << endl;
+
+	if (attempts == NULL) delete attempts;
+	
 	return id;
+}
+
+
+
+template <typename Key, typename Value>
+void hash_clear(HashNode<Key,Value>* ht, int length){
+	for (int i=0; i<length; ++i) ht[i] = HashNode<Key,Value>();
 }
 
 
@@ -103,6 +130,9 @@ void hash_print(HashNode<Key,Value>* ht, int length){
 	}	
 	cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
 }
+
+
+
 
 #endif
 
