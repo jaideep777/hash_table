@@ -1,10 +1,10 @@
 #include <iostream>
 using namespace std;
 
-#include "hashtable.h"
+#include "hashtable2_dh.h"
 
 int main(){
-	const int len = 11;	// better be a prime numnber		
+	const int len = 16;	// better be a prime numnber		
 	HashNode<int, float> ht[len];
 	
 //	for (auto key : {0,1,7,8,9,14,21,22,6}){
