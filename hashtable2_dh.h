@@ -57,7 +57,8 @@ int hash3D(Key key, int length){
 
 template <typename Key>
 int hash2(Key key){
-	return 2*((key*1)%50)+1;	// should return an odd number, as table size is 2^m
+	return 1;
+	//return 2*((key*1)%50)+1;	// should return an odd number, as table size is 2^m
 }
 
 
@@ -77,7 +78,7 @@ size_t hash_find(Key key, HashNode<Key,Value>* ht, int length, int* attempts=NUL
 	if (attempts == NULL) attempts = new int; // DEBUG ONLY
 	if (attempts != NULL) *attempts = count+1;
 	cout << "Find: (" << key << "):" << id << "*, ";
-	while (!(ht[id].key == key && !ht[id].isEmpty)){ 	// start at expected location and probe until: key matches and the slot is non-empty
+	while (!(ht[id].key == key && !ht[id].isEmpty)){ 	// start at expected location and probe until: slot is filled AND the key matches. (i.e., dont stop at empty slot)
 		++count;
 		assert(count <= length);
 		id = (hash + count*hash2(key))%length;
@@ -86,9 +87,9 @@ size_t hash_find(Key key, HashNode<Key,Value>* ht, int length, int* attempts=NUL
 	}
 	if (attempts != NULL) *attempts = count+1;
 	
+	// DEBUG ONLY
 	if (id >= 0) cout << "<" << key << ", " << ht[id].value << "> [" << *attempts << " tries]" << ((key != ht[id].value*10)? " * FAIL *":"") << endl;
 	else cout << "<" << key << ", " << "- " << "> [" << *attempts << " tries]" << endl;
-
 	if (attempts == NULL) delete attempts;
 	
 	return id;
@@ -125,9 +126,11 @@ int hash_delete(Key key, HashNode<Key,Value>* ht, int length){
 	size_t hash = hash3D(key, length);
 	int count;
 	size_t id = hash_find(key, ht, length, &count);
+	if (id == -1) return 1;	// if key is not found, nothing to be done
 	ht[id].isEmpty = true;
 	ht[id].isDeleted = true;
 	cout << "Delete: <" << key << "," << ht[id].value << "> (count, attempts-1) = " << ht[hash].count << ", " << count-1 << ")" << endl;	// TODO: Can reduce count by one when the last number is deleted, but that may well have been the only number inserted, in which case count should have gone to zero. But theres no way to keep track of this! When creating the hashmap for interpolator, upon interval refinement, dont delete the interval. Only change the value, and add a new interval. 
+	return 0;
 }
 
 
