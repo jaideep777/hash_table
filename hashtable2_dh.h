@@ -39,7 +39,7 @@ class HashNode{
 	void print(){
 		if (isDeleted) cout << "---<" << key << "," << value << ">--- " << " [" << count << " collisions]" << endl;
 		else if (!isEmpty) cout << "<" << key << ", " << value << "> " << " [" << count << " collisions]" << endl;
-		else cout << "-----------" << endl;
+		else cout << "-----------" << " [" << count << " collisions]" << endl;
 	}
 };
 
@@ -69,29 +69,48 @@ int hash2(Key key){
 ////	return (key)%677;
 //}
 
+struct HashFindResult{
+	size_t id;
+	size_t firstEmptySlot;
+	int    attempts;
+};
+
 
 template <typename Key, typename Value>
 size_t hash_find(Key key, HashNode<Key,Value>* ht, int length, int* attempts=NULL){
+	
+	HashFindResult res;
+	res.firstEmptySlot = -1;
+	
 	size_t hash = hash3D(key, length);
-	int id = hash;
+	size_t id = hash;
 	int count = 0; 
-	if (attempts == NULL) attempts = new int; // DEBUG ONLY
-	if (attempts != NULL) *attempts = count+1;
-	cout << "Find: (" << key << "):" << id << "*, ";
+//	if (attempts == NULL) attempts = new int; // DEBUG ONLY
+	cout << "Find: (" << key << "):" << id;// << "*, ";
 	while (!(ht[id].key == key && !ht[id].isEmpty)){ 	// start at expected location and probe until: slot is filled AND the key matches. (i.e., dont stop at empty slot)
+		if (count >= ht[hash].count) {id = -1; break;} 	// if probe attempts >= count (in case of equality, this is the count+1st probe, which can be skipped), key cannot be in the table, because only 'count' no. of entries were ever stored for a key hasshing to here
+
+		if (ht[id].isEmpty) res.firstEmptySlot = min(res.firstEmptySlot, id);
+		if (id == res.firstEmptySlot) cout << "__";
+
 		++count;
 		assert(count <= length);
+
 		id = (hash + count*hash2(key))%length;
-		cout << id << ", ";
-		if (count > ht[hash].count) {id = -1; break;} 	// if probe attempts exceeds count, key is not in the table (because only 'count' no. of entries were ever stored for the same key)
+
+		cout << ", " << id;
+//		if (count > ht[hash].count) {id = -1; break;} 	// if probe attempts exceed count, key cannot be in the table, because only 'count' no. of entries were ever stored for a key hasshing to here
 	}
 	if (attempts != NULL) *attempts = count+1;
+
+	res.attempts = count+1;
+	res.id = id;
 	
 	// DEBUG ONLY
-	if (id >= 0) cout << "<" << key << ", " << ht[id].value << "> [" << *attempts << " tries]" << ((key != ht[id].value*10)? " * FAIL *":"") << endl;
-	else cout << "<" << key << ", " << "- " << "> [" << *attempts << " tries]" << endl;
+	if (id != size_t(-1)) cout << ".   <" << key << ", " << ht[id].value << "> [" << res.attempts << " tries]" << ((key != ht[id].value*10)? " * FAIL *":"") << endl;
+	else cout << ".   <" << key << ", " << "- " << "> [" << res.attempts << " tries]" << endl;
 	if (attempts == NULL) delete attempts;
-	
+
 	return id;
 }
 
@@ -126,7 +145,7 @@ int hash_delete(Key key, HashNode<Key,Value>* ht, int length){
 	size_t hash = hash3D(key, length);
 	int count;
 	size_t id = hash_find(key, ht, length, &count);
-	if (id == -1) return 1;	// if key is not found, nothing to be done
+	if (id == size_t(-1)) return 1;	// if key is not found, nothing to be done
 	ht[id].isEmpty = true;
 	ht[id].isDeleted = true;
 	cout << "Delete: <" << key << "," << ht[id].value << "> (count, attempts-1) = " << ht[hash].count << ", " << count-1 << ")" << endl;	// TODO: Can reduce count by one when the last number is deleted, but that may well have been the only number inserted, in which case count should have gone to zero. But theres no way to keep track of this! When creating the hashmap for interpolator, upon interval refinement, dont delete the interval. Only change the value, and add a new interval. 

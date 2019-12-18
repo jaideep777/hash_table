@@ -118,6 +118,9 @@ int main(){
 //	}
 
 
+	size_t a = -1;
+	cout << "-1 size_t = " << a << endl;
+
 	const int len = 16;	// better be a prime numnber		
 	HashNode<int, float> ht[len];
 	
@@ -127,25 +130,23 @@ int main(){
 
 	hash_print(ht, len);
 	
-	for (auto key : {0,1,7,14,21,22,28,42,6}){
+	for (auto key : {0,16,32,64,65,66}){
 		int id = hash_find(key, ht, len);
 	}
 
-	for (auto key : {14,21,22}){
-		hash_delete(key, ht, len);
-	}
+//	for (auto key : {64}){
+//		hash_delete(key, ht, len);
+//	}
 
 	hash_print(ht, len);
 	
-	for (auto key : {11,33,44,55,66}){
-		hash_insert(key, float(key/10.f), ht, len);
+	for (auto key : {0,16,32,64,128}){
+		int id = hash_find(key, ht, len);
 	}
 
-	hash_print(ht, len);
 
-
-	// RIGOROUS TESTING
-	
+//	// RIGOROUS TESTING
+//	
 //	srand(time(NULL));
 //	
 //	const int len = 512;
