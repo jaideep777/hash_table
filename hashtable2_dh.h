@@ -44,10 +44,10 @@ class HashNode{
 };
 
 
-
 template <typename Key>
 int hash3D(Key key, int length){
-	return (key*377771) % length;
+	return ((unsigned long long)key*377771) % length;
+//	return ((unsigned long long)key*677) % length;
 //	return (key.z*377771 + key.y*677 + key.x) % length;	// 2.15, 64
 //	return (key.z*377771 + key.y*133337 + key.x) % length; // 1.7, 25
 //	return (key.z*497771 + key.y*133337 + key.x) % length; // 30, 173
@@ -57,16 +57,16 @@ int hash3D(Key key, int length){
 
 template <typename Key>
 int hash2(Key key){
-	return 2*(key%10)+1;	// should return an odd number, as table size is 2^m
+	return 2*((key*1)%50)+1;	// should return an odd number, as table size is 2^m
 }
 
 
-template <typename Key>
-int increment(Key key, int count){
-//	return (id+11)%length;
-	return count*hash2(key);
-//	return (key)%677;
-}
+//template <typename Key>
+//int increment(Key key, int count){
+////	return (id+11)%length;
+//	return count*hash2(key);
+////	return (key)%677;
+//}
 
 
 template <typename Key, typename Value>
@@ -129,7 +129,6 @@ int hash_delete(Key key, HashNode<Key,Value>* ht, int length){
 	ht[id].isDeleted = true;
 	cout << "Delete: <" << key << "," << ht[id].value << "> (count, attempts-1) = " << ht[hash].count << ", " << count-1 << ")" << endl;	// TODO: Can reduce count by one when the last number is deleted, but that may well have been the only number inserted, in which case count should have gone to zero. But theres no way to keep track of this! When creating the hashmap for interpolator, upon interval refinement, dont delete the interval. Only change the value, and add a new interval. 
 }
-
 
 
 template <typename Key, typename Value>
