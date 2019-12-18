@@ -77,7 +77,7 @@ struct HashFindResult{
 
 
 template <typename Key, typename Value>
-size_t hash_find(Key key, HashNode<Key,Value>* ht, int length, int* attempts=NULL){
+HashFindResult hash_find(Key key, HashNode<Key,Value>* ht, int length, int* attempts=NULL){
 	
 	HashFindResult res;
 	res.firstEmptySlot = -1;
@@ -88,10 +88,10 @@ size_t hash_find(Key key, HashNode<Key,Value>* ht, int length, int* attempts=NUL
 //	if (attempts == NULL) attempts = new int; // DEBUG ONLY
 	cout << "Find: (" << key << "):" << id;// << "*, ";
 	while (!(ht[id].key == key && !ht[id].isEmpty)){ 	// start at expected location and probe until: slot is filled AND the key matches. (i.e., dont stop at empty slot)
-		if (count >= ht[hash].count) {id = -1; break;} 	// if probe attempts >= count (in case of equality, this is the count+1st probe, which can be skipped), key cannot be in the table, because only 'count' no. of entries were ever stored for a key hasshing to here
-
 		if (ht[id].isEmpty) res.firstEmptySlot = min(res.firstEmptySlot, id);
 		if (id == res.firstEmptySlot) cout << "__";
+
+		if (count >= ht[hash].count) {id = -1; break;} 	// if probe attempts >= count (in case of equality, this is the count+1st probe, which can be skipped), key cannot be in the table, because only 'count' no. of entries were ever stored for a key hasshing to here
 
 		++count;
 		assert(count <= length);
@@ -111,7 +111,7 @@ size_t hash_find(Key key, HashNode<Key,Value>* ht, int length, int* attempts=NUL
 	else cout << ".   <" << key << ", " << "- " << "> [" << res.attempts << " tries]" << endl;
 	if (attempts == NULL) delete attempts;
 
-	return id;
+	return res;
 }
 
 
@@ -144,7 +144,7 @@ template <typename Key, typename Value>
 int hash_delete(Key key, HashNode<Key,Value>* ht, int length){
 	size_t hash = hash3D(key, length);
 	int count;
-	size_t id = hash_find(key, ht, length, &count);
+	size_t id = hash_find(key, ht, length, &count).id;
 	if (id == size_t(-1)) return 1;	// if key is not found, nothing to be done
 	ht[id].isEmpty = true;
 	ht[id].isDeleted = true;
