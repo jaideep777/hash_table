@@ -77,7 +77,7 @@ struct HashFindResult{
 
 
 template <typename Key, typename Value>
-HashFindResult hash_find(Key key, HashNode<Key,Value>* ht, int length, int* attempts=NULL){
+HashFindResult hash_find(Key key, HashNode<Key,Value>* ht, int length){//, int* attempts=NULL){
 	
 	HashFindResult res;
 	res.firstEmptySlot = -1;
@@ -88,12 +88,14 @@ HashFindResult hash_find(Key key, HashNode<Key,Value>* ht, int length, int* atte
 //	if (attempts == NULL) attempts = new int; // DEBUG ONLY
 	cout << "Find: (" << key << "):" << id;// << "*, ";
 	while (!(ht[id].key == key && !ht[id].isEmpty)){ 	// start at expected location and probe until: slot is filled AND the key matches. (i.e., dont stop at empty slot)
+		++count;
+
 		if (ht[id].isEmpty) res.firstEmptySlot = min(res.firstEmptySlot, id);
+
 		if (id == res.firstEmptySlot) cout << "__";
 
-		if (count >= ht[hash].count) {id = -1; break;} 	// if probe attempts >= count (in case of equality, this is the count+1st probe, which can be skipped), key cannot be in the table, because only 'count' no. of entries were ever stored for a key hasshing to here
+		if (count > ht[hash].count) {id = -1; break;} 	// if probe attempts >= count (in case of equality, this is the count+1st probe, which can be skipped), key cannot be in the table, because only 'count' no. of entries were ever stored for a key hasshing to here
 
-		++count;
 		assert(count <= length);
 
 		id = (hash + count*hash2(key))%length;
@@ -101,7 +103,7 @@ HashFindResult hash_find(Key key, HashNode<Key,Value>* ht, int length, int* atte
 		cout << ", " << id;
 //		if (count > ht[hash].count) {id = -1; break;} 	// if probe attempts exceed count, key cannot be in the table, because only 'count' no. of entries were ever stored for a key hasshing to here
 	}
-	if (attempts != NULL) *attempts = count+1;
+//	if (attempts != NULL) *attempts = count+1;
 
 	res.attempts = count+1;
 	res.id = id;
@@ -109,7 +111,7 @@ HashFindResult hash_find(Key key, HashNode<Key,Value>* ht, int length, int* atte
 	// DEBUG ONLY
 	if (id != size_t(-1)) cout << ".   <" << key << ", " << ht[id].value << "> [" << res.attempts << " tries]" << ((key != ht[id].value*10)? " * FAIL *":"") << endl;
 	else cout << ".   <" << key << ", " << "- " << "> [" << res.attempts << " tries]" << endl;
-	if (attempts == NULL) delete attempts;
+//	if (attempts == NULL) delete attempts;
 
 	return res;
 }
@@ -119,6 +121,7 @@ template <typename Key, typename Value>
 int hash_insert(Key key, Value value, HashNode<Key,Value>* ht, int length, int* final_id=NULL){
 	cout << "Insert: <" << key << ", " << value << "> : trying ";
 	size_t hash = hash3D(key, length);	// get the hash of the specifed key
+
 	size_t id = hash;					// the location where this <key, value> will be stored equals hash, but will be incremented if not empty 
 	cout << hash << "*, ";
 	int count = 0;						// number of collisions before empty slot was found (defaults to 0, i.e. no increments were required)
@@ -128,6 +131,13 @@ int hash_insert(Key key, Value value, HashNode<Key,Value>* ht, int length, int* 
 		id = (hash + count*hash2(key))%length;			// increment slot (using double hashing) until empty or deleted slot found 
 		cout << id << ", ";
 	}
+
+//	auto res = hash_find(key, ht, length);
+////	size_t find_id = res.id;
+////	size_t fe = res.firstEmptySlot;
+//	size_t id = min(res.firstEmptySlot, res.id);		// if not found, id = -1 (very big) so id = fe; if found, id = id
+//	int count = res.attempts;			
+
 	ht[id].value = value;				// once empty slot found, store the <key,value> in the slot
 	ht[id].key = key;
 	ht[id].isEmpty = false;
@@ -143,8 +153,9 @@ int hash_insert(Key key, Value value, HashNode<Key,Value>* ht, int length, int* 
 template <typename Key, typename Value>
 int hash_delete(Key key, HashNode<Key,Value>* ht, int length){
 	size_t hash = hash3D(key, length);
-	int count;
-	size_t id = hash_find(key, ht, length, &count).id;
+	auto res = hash_find(key, ht, length);
+	size_t id = res.id;
+	int count = res.attempts;
 	if (id == size_t(-1)) return 1;	// if key is not found, nothing to be done
 	ht[id].isEmpty = true;
 	ht[id].isDeleted = true;
