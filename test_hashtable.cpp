@@ -8,6 +8,9 @@ using namespace std;
 #include "hashtable3_dh.h"
 
 int main(){
+
+// OTHER TESTS
+
 //	const int len = 16;	// better be a prime numnber		
 //	HashNode<int, float> ht[len];
 	
@@ -154,47 +157,51 @@ int main(){
 
 //	hash_print(ht, len);
 
-
 	// 3. RIGOROUS TESTING 
 	
 	//srand(time(NULL));
 	
-	const int len = 512;
-	float load_factor = 0.9;
+	const int len = 512;		// HT size
+	float load_factor = 0.4;	// HT load factor
 	
 	int n = load_factor * len;
 	
-	vector <int> all_keys(500000);
+	// Create a huge queue of random keys to draw from, for inserting into the hashtable etc
+	vector <int> all_keys(500000);	
 	for (int i=0; i<all_keys.size(); ++i) all_keys[i] = i;
 	shuffle(all_keys.begin(), all_keys.end(), default_random_engine());
 
 	vector <int>::iterator it = all_keys.begin();
 	
 	
-	HashNode<int, float> ht[len];
+	HashNode<int, float> ht[len];	// HT definition
 	
-	list <int> keys;			// generate n keys
+	// generate a list of n keys. This list keeps track (separately) of all the keys in the hash table for analytics
+	list <int> keys;			
 
-	int del_till = 0;
 
 	// initialize first set of keys to go into HT
 	for (int i=0; i<n; ++i) keys.push_back(*it++);
-	
-	cout << "All Keys:   ";
-	for (int i=0; i<30; ++i) cout << all_keys[i] << " ";
-	cout << endl;
 
-	cout << "Keys in HT: ";
-	for (auto key : keys) cout << key << " ";
-	cout << endl;
+//	cout << "All Keys:   ";
+//	for (int i=0; i<30; ++i) cout << all_keys[i] << " ";
+//	cout << endl;
 
+//	cout << "Keys in HT: ";
+//	for (auto key : keys) cout << key << " ";
+//	cout << endl;
+
+
+	// insert the 1st set of keys into the HT
 	for (auto key:keys)	hash_insert(key, float(key/10.f), ht, len);
 
 
 	// LOOP FROM HERE
 
-	del_till = 0;
+	// in every iteration, keys at indices [0,del_till) in the above list are removed from the hashtable, and equal number of new keys is inserted. 
+	int del_till = 0;			
 
+	// Variables to collect statictics
 	int existing_keys_found = 0, existing_keys_tested = 0;
 	int non_existing_keys_found = 0, non_existing_keys_tested = 0;
 	int existing_keys_not_found = 0;
@@ -202,175 +209,185 @@ int main(){
 	int deleted_keys_found = 0, deleted_keys_tested = 0;
 	int deleted_keys_not_found = 0;
 
-	int n_collisions_insert = 0, n_attempts_insert = 0, n_detects_new = 0;
-	int n_collisions_insert_dup = 0, n_attempts_insert_dup = 0, n_detects_dup = 0;
-	int n_att_find_existing = 0, n_oper_find_existing = 0;
-	int n_att_find_non_existing = 0, n_oper_find_non_existing = 0;
+	int n_probes_insert = 0, n_attempts_insert = 0, n_detects_new = 0;
+	int n_probes_insert_dup = 0, n_attempts_insert_dup = 0, n_detects_dup = 0;
+	int n_probes_find_existing = 0, n_attempts_find_existing = 0;
+	int n_probes_find_non_existing = 0, n_attempts_find_non_existing = 0;
 
 
 	for (int k=0; k<100; ++k){
 		
-		// 0. Rebuild hash-map if we dont want collisions to accummulate
-//		hash_clear(ht, len);	// clear map
-//		for (auto key:keys)	hash_insert(key, float(key/10.f), ht, len);	// insert all keys in list	
-//		auto it3 = keys.begin();
-//		for (int i=0; i<del_till; ++i) hash_delete(*it3++, ht, len);	// delete all keys that were deleted in previous round
+		// -----------------------------------------------------------------------------------------------------------------
+		// 0. Rebuild hash-map if we dont want the probes counter to accummulate (due to repeated deletions and insertions)
+		// -----------------------------------------------------------------------------------------------------------------
+		hash_clear(ht, len);	// clear map
+		for (auto key:keys)	hash_insert(key, float(key/10.f), ht, len);	// insert all keys in list	
+		auto it3 = keys.begin();
+		for (int i=0; i<del_till; ++i) hash_delete(*it3++, ht, len);	// delete all keys that were deleted in previous round
+
 		
+		// -----------------------------------------------------------------------------------------------------------------
 		// 1. remove deleted keys and draw equal number of new keys from big set
+		// -----------------------------------------------------------------------------------------------------------------
 		for (int i=0; i<del_till; ++i)  keys.pop_front();
 		for (int i=0; i<del_till; ++i)  keys.push_back(*it++);
 		
-		cout << "All Keys:   ";
-		for (int i=0; i<30; ++i) cout << all_keys[i] << " ";
-		cout << endl;
+//		cout << "All Keys:   ";
+//		for (int i=0; i<30; ++i) cout << all_keys[i] << " ";
+//		cout << endl;
 
-		cout << "Keys in HT: ";
-		for (auto key : keys) cout << key << " ";
-		cout << endl;
+//		cout << "Keys in HT: ";
+//		for (auto key : keys) cout << key << " ";
+//		cout << endl;
 
+
+		// -----------------------------------------------------------------------------------------------------------------
 		// 2. insert the newly drawn keys into the hashmap
+		// -----------------------------------------------------------------------------------------------------------------
 		auto it_keys = keys.begin();
-		advance(it_keys, n-del_till);	// last n-del_till keys are newly drawn into queue, to be inserted 
+		advance(it_keys, n-del_till);	// keys at locations [del_till, n) are newly drawn into queue, to be inserted 
 		for (int i=0; i<del_till; ++i){
 			int duplicate;
-			n_collisions_insert += hash_insert(*it_keys, float(*it_keys/10.f), ht, len, &duplicate);
+			n_probes_insert += hash_insert(*it_keys, float(*it_keys/10.f), ht, len, &duplicate);
 			n_attempts_insert += 1;
 			n_detects_new += 1-duplicate;
 			++it_keys;
 		}
-		hash_print(ht, len);
-		cout << "-----> Inserting Keys (" << n_collisions_insert << "/" << n_attempts_insert << "/" << n_detects_new << " = " << float(n_collisions_insert)/n_attempts_insert << " %)" << endl; 
+//		hash_print(ht, len);
+//		cout << "-----> Inserting Keys (" << n_probes_insert << "/" << n_attempts_insert << "/" << n_detects_new << " = " << float(n_probes_insert)/n_attempts_insert << " %)" << endl; 
 		
-		// 3. shuffle keys
+
+		// -----------------------------------------------------------------------------------------------------------------
+		// 2.1 shuffle keys
+		// -----------------------------------------------------------------------------------------------------------------
 		vector <int> keys_vec(keys.begin(), keys.end());
 		shuffle(keys_vec.begin(), keys_vec.end(), default_random_engine());	// shuffle keys and select 1st 2/3rds to delete
 		keys = list<int>(keys_vec.begin(), keys_vec.end());
 
-		// 3.1 Attempt to re-insert the previously inserted keys into the hashmap
+
+		// -----------------------------------------------------------------------------------------------------------------
+		// 3. Attempt to re-insert ALL the keys currently existing in the hashmap
+		// -----------------------------------------------------------------------------------------------------------------
 		it_keys = keys.begin();
-		advance(it_keys, n-del_till);	// last n-del_till keys are newly drawn into queue, to be inserted 
 		for (int i=0; i<del_till; ++i){
 			int duplicate;
-			n_collisions_insert_dup += hash_insert(*it_keys, float(*it_keys/10.f), ht, len, &duplicate);
+			n_probes_insert_dup += hash_insert(*it_keys, float(*it_keys/10.f), ht, len, &duplicate);
 			n_attempts_insert_dup += 1;
 			n_detects_dup += duplicate;
 			++it_keys;
 		}
-		hash_print(ht, len);
-		cout << "-----> Inserting Duplicate Keys (" << n_collisions_insert_dup << "/" << n_attempts_insert_dup << "/" << n_detects_dup << " = " << float(n_collisions_insert_dup)/n_attempts_insert_dup << " %)" << endl; 
+//		hash_print(ht, len);
+//		cout << "-----> Inserting Duplicate Keys (" << n_probes_insert_dup << "/" << n_attempts_insert_dup << "/" << n_detects_dup << " = " << float(n_probes_insert_dup)/n_attempts_insert_dup << " %)" << endl; 
 
 		
-		// 4. search keys that are in the HT
+		// -----------------------------------------------------------------------------------------------------------------
+		// 4. search keys that are in the HT --- Check if EVERY key in the HT is reachable
+		// -----------------------------------------------------------------------------------------------------------------
 		for (auto key : keys){
-//			int att=0;
 			auto res = hash_find(key, ht, len);
 			size_t id = res.id;
 			int att = res.attempts;
 			if (id == -1) ++existing_keys_not_found;
 			else ++existing_keys_found;
 			++existing_keys_tested;
-			n_att_find_existing += att;
-			n_oper_find_existing += 1;
+			n_probes_find_existing += att;
+			n_attempts_find_existing += 1;
 		}
-		cout << "-----> Existing keys reported found = " << existing_keys_found << " (" << float(existing_keys_found)/existing_keys_tested*100 << " %)" << endl; 
-		cout << "-----> Existing keys reported not found = " << existing_keys_not_found << " (" << float(existing_keys_not_found)/existing_keys_tested*100 << " %)" << endl; 
+//		cout << "-----> Existing keys reported found = " << existing_keys_found << " (" << float(existing_keys_found)/existing_keys_tested*100 << " %)" << endl; 
+//		cout << "-----> Existing keys reported not found = " << existing_keys_not_found << " (" << float(existing_keys_not_found)/existing_keys_tested*100 << " %)" << endl; 
 		
-		// 5. search keys that are NOT in the HT
-		auto it2 = it;
+
+		// -----------------------------------------------------------------------------------------------------------------
+		// 5. search keys that are NOT in the HT 
+		// -----------------------------------------------------------------------------------------------------------------
+		auto it2 = it;	// it points just beyond the last key that was drawn from the big random keys list 
 		for (int i=0; i<10; ++i){
-//			int att=0;
 			auto res = hash_find(*it2++, ht, len);
 			size_t id = res.id;
 			int att = res.attempts;
 			if (id == -1) ++non_existing_keys_not_found;
 			else ++non_existing_keys_found;
 			++non_existing_keys_tested;
-			n_att_find_non_existing += att;
-			n_oper_find_non_existing += 1;
+			n_probes_find_non_existing += att;
+			n_attempts_find_non_existing += 1;
 		}
-		cout << "-----> Non-Existing keys reported found = " << non_existing_keys_found << " (" << float(non_existing_keys_found)/non_existing_keys_tested*100 << " %)" << endl; 
-		cout << "-----> Non-Existing keys reported not found = " << non_existing_keys_not_found << " (" << float(non_existing_keys_not_found)/non_existing_keys_tested*100 << " %)" << endl; 
+//		cout << "-----> Non-Existing keys reported found = " << non_existing_keys_found << " (" << float(non_existing_keys_found)/non_existing_keys_tested*100 << " %)" << endl; 
+//		cout << "-----> Non-Existing keys reported not found = " << non_existing_keys_not_found << " (" << float(non_existing_keys_not_found)/non_existing_keys_tested*100 << " %)" << endl; 
 		
 		
-		// 6. choose 1st m keys to delete (these will be random, since keys were shuffled)
+		// -----------------------------------------------------------------------------------------------------------------
+		// 6. choose a random number M of keys to delete (even though range [0,M) in the keys list will be deleted, 
+		//       these keys will be random, since keys were shuffled)
+		// -----------------------------------------------------------------------------------------------------------------
 		del_till = (float(rand())/RAND_MAX) * n;
 
-		cout << "Keys in HT: ";
-		for (auto key : keys) cout << key << " ";
-		cout << endl;
 		auto it1 = keys.begin();
 		for (int i=0; i<del_till; ++i) hash_delete(*it1++, ht, len);
-		hash_print(ht, len);
+//		hash_print(ht, len);
 
-//		deleted_keys_found = 0;
-//		deleted_keys_not_found = 0;
+
+		// -----------------------------------------------------------------------------------------------------------------
+		// 7. Search for EVERY deleted key. They should NOT be reported found 
+		// -----------------------------------------------------------------------------------------------------------------
 		it1 = keys.begin();
 		for (int i=0; i<del_till; ++i){
-//			int att=0;
 			auto res = hash_find(*it1++, ht, len);
 			size_t id = res.id;
 			int att = res.attempts;
 			if (id == -1) ++deleted_keys_not_found;
 			else ++deleted_keys_found;
 			++deleted_keys_tested;
-			n_att_find_non_existing += att;
-			n_oper_find_non_existing += 1;
+			n_probes_find_non_existing += att;
+			n_attempts_find_non_existing += 1;
 		}
-		cout << "-----> Deleted keys reported found = " << deleted_keys_found << " (" << float(deleted_keys_found)/deleted_keys_tested*100 << " %)" << endl; 
-		cout << "-----> Deleted keys reported not found = " << deleted_keys_not_found << " (" << float(deleted_keys_not_found)/deleted_keys_tested*100 << " %)" << endl; 
+//		cout << "-----> Deleted keys reported found = " << deleted_keys_found << " (" << float(deleted_keys_found)/deleted_keys_tested*100 << " %)" << endl; 
+//		cout << "-----> Deleted keys reported not found = " << deleted_keys_not_found << " (" << float(deleted_keys_not_found)/deleted_keys_tested*100 << " %)" << endl; 
 
-//		existing_keys_found = 0;
-//		non_existing_keys_found = 0;
-//		existing_keys_not_found = 0;
-//		non_existing_keys_not_found = 0;
+
+		// -----------------------------------------------------------------------------------------------------------------
+		// 8. Search for ALL keys that weren't deleted. They SHOULD be reported found 
+		// -----------------------------------------------------------------------------------------------------------------
 		it1 = keys.begin();			// iterator points to keys.front() 
 		advance(it1, del_till);		// advance it to del_till (these are the keys that were NOT deleted)
 		for (int i=0; i<n-del_till; ++i){
-//			int att=0;
 			auto res = hash_find(*it1++, ht, len);
 			size_t id = res.id;
 			int att = res.attempts;
 			if (id == -1) ++existing_keys_not_found;
 			else ++existing_keys_found;
 			++existing_keys_tested;
-			n_att_find_existing += att;
-			n_oper_find_existing += 1;
+			n_probes_find_existing += att;
+			n_attempts_find_existing += 1;
 		}
-		cout << "-----> After Delete:" << endl;
-		cout << "-----> Existing keys reported found = " << existing_keys_found << " (" << float(existing_keys_found)/existing_keys_tested*100 << " %)" << endl; 
-		cout << "-----> Existing keys reported not found = " << existing_keys_not_found << " (" << float(existing_keys_not_found)/existing_keys_tested*100 << " %)" << endl; 
+//		cout << "-----> After Delete:" << endl;
+//		cout << "-----> Existing keys reported found = " << existing_keys_found << " (" << float(existing_keys_found)/existing_keys_tested*100 << " %)" << endl; 
+//		cout << "-----> Existing keys reported not found = " << existing_keys_not_found << " (" << float(existing_keys_not_found)/existing_keys_tested*100 << " %)" << endl; 
 		
-		hash_print(ht, len);
+//		hash_print(ht, len);
 		
-		cout << "-------------------x x x---------------------------\n";
+//		cout << "-------------------x x x---------------------------\n";
 	}
 	
 
-	cout << "Summary: " << endl;
+	cout << "Test HashTable Summary: " << endl;
 	cout << " Correct: " << endl;
-	cout << "-----> Existing keys reported found = " << existing_keys_found << " (" << float(existing_keys_found)/existing_keys_tested*100 << " %)" << endl; 
-	cout << "-----> Non-Existing keys reported not found = " << non_existing_keys_not_found << " (" << float(non_existing_keys_not_found)/non_existing_keys_tested*100 << " %)" << endl; 
-	cout << "-----> Deleted keys reported not found = " << deleted_keys_not_found << " (" << float(deleted_keys_not_found)/deleted_keys_tested*100 << " %)" << endl; 
+	cout << "-----> Existing keys reported found = " << existing_keys_found << " (" << float(existing_keys_found)/existing_keys_tested*100 << "%)" << endl; 
+	cout << "-----> Non-Existing keys reported not found = " << non_existing_keys_not_found << " (" << float(non_existing_keys_not_found)/non_existing_keys_tested*100 << "%)" << endl; 
+	cout << "-----> Deleted keys reported not found = " << deleted_keys_not_found << " (" << float(deleted_keys_not_found)/deleted_keys_tested*100 << "%)" << endl; 
 	cout << " Wrong: " << endl;
-	cout << "-----> Existing keys reported not found = " << existing_keys_not_found << " (" << float(existing_keys_not_found)/existing_keys_tested*100 << " %)" << endl; 
-	cout << "-----> Non-Existing keys reported found = " << non_existing_keys_found << " (" << float(non_existing_keys_found)/non_existing_keys_tested*100 << " %)" << endl; 
-	cout << "-----> Deleted keys reported found = " << deleted_keys_found << " (" << float(deleted_keys_found)/deleted_keys_tested*100 << " %)" << endl; 
-	cout << " Performance:" << endl;
-	cout << "-----> Attempts per insertion = " << float(n_collisions_insert)/n_attempts_insert << endl;	
-	cout << "-----> Attempts per insertion (duplicate keys) = " << float(n_collisions_insert_dup)/n_attempts_insert_dup << endl;	
-	cout << "-----> Attempts per search (key exists)  = " << float(n_att_find_existing)/n_oper_find_existing << endl;	
-	cout << "-----> Attempts per search (key missing) = " << float(n_att_find_non_existing)/n_oper_find_non_existing << endl;	
-	cout << " Detecting Duplicates:" << endl;
+	cout << "-----> Existing keys reported not found = " << existing_keys_not_found << " (" << float(existing_keys_not_found)/existing_keys_tested*100 << "%)" << endl; 
+	cout << "-----> Non-Existing keys reported found = " << non_existing_keys_found << " (" << float(non_existing_keys_found)/non_existing_keys_tested*100 << "%)" << endl; 
+	cout << "-----> Deleted keys reported found = " << deleted_keys_found << " (" << float(deleted_keys_found)/deleted_keys_tested*100 << "%)" << endl; 
+	cout << " Duplicates:" << endl;
 	cout << "-----> Duplicates  detected / tested = " << float(n_detects_dup)/n_attempts_insert_dup*100 << "%" << endl;	
 	cout << "-----> New entries detected / tested = " << float(n_detects_new)/n_attempts_insert*100 << "%" << endl;	
+	cout << " Performance:" << endl;
+	cout << "-----> Probes per insertion = " << float(n_probes_insert)/n_attempts_insert << endl;	
+	cout << "-----> Probes per insertion (duplicate keys) = " << float(n_probes_insert_dup)/n_attempts_insert_dup << endl;	
+	cout << "-----> Probes per search (key exists)  = " << float(n_probes_find_existing)/n_attempts_find_existing << endl;	
+	cout << "-----> Probes per search (key missing) = " << float(n_probes_find_non_existing)/n_attempts_find_non_existing << endl;	
 
 
-//	cout << " Table and keys after all operations:\n";
-//	for (int i=0; i<del_till; ++i)  keys.pop_front();
-//	cout << "Keys in HT: ";
-//	for (auto key : keys) cout << key << " ";
-//	cout << endl;
-//	
 //	hash_print(ht, len);	
 	
 
