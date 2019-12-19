@@ -84,8 +84,8 @@ HashFindResult hash_find(Key key, HashNode<Key,Value>* ht, int length){//, int* 
 	size_t id;
 	int count = 0; 
 	// DEBUG_HT cout << "Find: (" << key << "): |";// << "*, ";
-	do { 	
-		id = (hash + count*incrementHasher(key))%length; // probe until slot is filled AND the key matches. (i.e., dont stop at empty slot)
+	while(1) { 	// probe until slot is filled AND the key matches. (i.e., dont stop at empty slot)
+		id = (hash + count*incrementHasher(key))%length; 
 		++count;
 
 
@@ -96,10 +96,10 @@ HashFindResult hash_find(Key key, HashNode<Key,Value>* ht, int length){//, int* 
 		if ((ht[id].key == key && !ht[id].isEmpty)) break;	// loop breaks as soon as key is found AND the slot was not marked empty
 		
 	 	// if probe reaches this point on the count'th try, the key cannot be in the table, because it it were, loop would've exited on the previous statement. (Only 'count' no. of entries were ever stored for a key hasshing to here)
-		if (count >= ht[hash].count) { id = -1; break; }
+		if (count >= ht[hash].count) { id = -1; break; }	// this can be split into 2 statements, 1 to set id, 2nd break condition. 
 	
 		assert(count <= length);	// if count exeeds length, something is wrong! -- This CAN occur is probes accumulate, but rebuilding the HT will solve the problem
-	} while (1);
+	} 
 
 	res.attempts = count;
 	res.id = id;
