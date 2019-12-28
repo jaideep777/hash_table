@@ -3,9 +3,10 @@
 #include <list>
 #include <algorithm>
 #include <random>
-using namespace std;
 
-#include "hashtable3_dh.h"
+#include "hashtable3_dh_class.h"
+
+using namespace std;
 
 int main(){
 
@@ -27,7 +28,8 @@ int main(){
 	vector <int>::iterator it = all_keys.begin();
 	
 	
-	HashNode<int, float> ht[len];	// HT definition
+	HashTable<int,float> ht(len, load_factor);  // HT definition
+	//HashNode<int, float> ht[len];	
 	
 	// generate a list of n keys. This list keeps track (separately) of all the keys in the hash table for analytics
 	list <int> keys;			
@@ -46,7 +48,7 @@ int main(){
 
 
 	// insert the 1st set of keys into the HT
-	for (auto key:keys)	hash_insert(key, float(key/10.f), ht, len);
+	for (auto key:keys)	ht.hash_insert(key, float(key/10.f));
 
 
 	// LOOP FROM HERE
@@ -73,10 +75,10 @@ int main(){
 		// -----------------------------------------------------------------------------------------------------------------
 		// 0. Rebuild hash-map if we dont want the probes counter to accummulate (due to repeated deletions and insertions)
 		// -----------------------------------------------------------------------------------------------------------------
-		hash_clear(ht, len);	// clear map
-		for (auto key:keys)	hash_insert(key, float(key/10.f), ht, len);	// insert all keys in list	
+		ht.hash_clear();	// clear map
+		for (auto key:keys)	ht.hash_insert(key, float(key/10.f));	// insert all keys in list	
 		auto it3 = keys.begin();
-		for (int i=0; i<del_till; ++i) hash_delete(*it3++, ht, len);	// delete all keys that were deleted in previous round
+		for (int i=0; i<del_till; ++i) ht.hash_delete(*it3++);	// delete all keys that were deleted in previous round
 
 		
 		// -----------------------------------------------------------------------------------------------------------------
@@ -101,7 +103,7 @@ int main(){
 		advance(it_keys, n-del_till);	// keys at locations [del_till, n) are newly drawn into queue, to be inserted 
 		for (int i=0; i<del_till; ++i){
 			int duplicate;
-			n_probes_insert += hash_insert(*it_keys, float(*it_keys/10.f), ht, len, &duplicate);
+			n_probes_insert += ht.hash_insert(*it_keys, float(*it_keys/10.f), &duplicate);
 			n_attempts_insert += 1;
 			n_detects_new += 1-duplicate;
 			++it_keys;
@@ -124,7 +126,7 @@ int main(){
 		it_keys = keys.begin();
 		for (int i=0; i<del_till; ++i){
 			int duplicate;
-			n_probes_insert_dup += hash_insert(*it_keys, float(*it_keys/10.f), ht, len, &duplicate);
+			n_probes_insert_dup += ht.hash_insert(*it_keys, float(*it_keys/10.f), &duplicate);
 			n_attempts_insert_dup += 1;
 			n_detects_dup += duplicate;
 			++it_keys;
@@ -137,7 +139,7 @@ int main(){
 		// 4. search keys that are in the HT --- Check if EVERY key in the HT is reachable
 		// -----------------------------------------------------------------------------------------------------------------
 		for (auto key : keys){
-			auto res = hash_find(key, ht, len);
+			auto res = ht.hash_find(key);
 			size_t id = res.id;
 			int att = res.attempts;
 			if (id == -1) ++existing_keys_not_found;
@@ -155,7 +157,7 @@ int main(){
 		// -----------------------------------------------------------------------------------------------------------------
 		auto it2 = it;	// it points just beyond the last key that was drawn from the big random keys list 
 		for (int i=0; i<10; ++i){
-			auto res = hash_find(*it2++, ht, len);
+			auto res = ht.hash_find(*it2++);
 			size_t id = res.id;
 			int att = res.attempts;
 			if (id == -1) ++non_existing_keys_not_found;
@@ -175,7 +177,7 @@ int main(){
 		del_till = (float(rand())/RAND_MAX) * n;
 
 		auto it1 = keys.begin();
-		for (int i=0; i<del_till; ++i) hash_delete(*it1++, ht, len);
+		for (int i=0; i<del_till; ++i) ht.hash_delete(*it1++);
 //		hash_print(ht, len);
 
 
@@ -184,7 +186,7 @@ int main(){
 		// -----------------------------------------------------------------------------------------------------------------
 		it1 = keys.begin();
 		for (int i=0; i<del_till; ++i){
-			auto res = hash_find(*it1++, ht, len);
+			auto res = ht.hash_find(*it1++);
 			size_t id = res.id;
 			int att = res.attempts;
 			if (id == -1) ++deleted_keys_not_found;
@@ -203,7 +205,7 @@ int main(){
 		it1 = keys.begin();			// iterator points to keys.front() 
 		advance(it1, del_till);		// advance it to del_till (these are the keys that were NOT deleted)
 		for (int i=0; i<n-del_till; ++i){
-			auto res = hash_find(*it1++, ht, len);
+			auto res = ht.hash_find(*it1++);
 			size_t id = res.id;
 			int att = res.attempts;
 			if (id == -1) ++existing_keys_not_found;
